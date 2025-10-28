@@ -22,15 +22,6 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(signInUrl);
     }
 
-    // Optional: Check for admin routes
-    if (request.nextUrl.pathname.startsWith('/dashboard')) {
-        const isAdmin = (token as any).isAdmin || false;
-        if (!isAdmin) {
-            console.log("❌ Not admin, redirecting");
-            return NextResponse.redirect(new URL('/', request.url));
-        }
-    }
-
     return NextResponse.next();
 }
 
