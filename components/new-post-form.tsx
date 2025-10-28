@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,9 +16,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
 import { useSession } from "next-auth/react";
-import useSWRMutation from "swr/mutation";
 
 type Post = {
+  id?: string;
   title: string;
   body: string;
   category: string;
@@ -27,13 +27,18 @@ type Post = {
 
 type NewPostFormProps = {
   onSubmit: (post: Post) => void;
+  initialData?: Post;
+  mode?: "create" | "edit";
 };
 
 const BLOCKED_WORDS = ["캄보디아", "프놈펜", "불법체류", "텔레그램"];
 const CATEGORIES = ["NOTICE", "QNA", "FREE"];
-const TAGS = [];
 
-export function NewPostForm({ onSubmit }: NewPostFormProps) {
+export function NewPostForm({
+  onSubmit,
+  initialData,
+  mode = "create",
+}: NewPostFormProps) {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [category, setCategory] = useState("");
@@ -42,9 +47,19 @@ export function NewPostForm({ onSubmit }: NewPostFormProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { data: session, status } = useSession();
 
+  // Populate form with initial data when in edit mode
+  useEffect(() => {
+    if (mode === "edit" && initialData) {
+      setTitle(initialData.title);
+      setBody(initialData.body);
+      setCategory(initialData.category);
+      setTags(initialData.tags || []);
+    }
+  }, [mode, initialData]);
+
   // Debug logging
   console.log("Session in NewPostForm:", session);
-  console.log("AccessToken:", session?.token);
+  console.log("AccessToken:", session?.accessToken);
 
   const containsBlockedWords = (text: string): boolean => {
     return BLOCKED_WORDS.some((word) => text.includes(word));
@@ -100,7 +115,6 @@ export function NewPostForm({ onSubmit }: NewPostFormProps) {
       console.error("You are not logged in.");
       return;
     }
-    const token = session.token;
 
     if (validateForm()) {
       const postData = {
@@ -111,10 +125,19 @@ export function NewPostForm({ onSubmit }: NewPostFormProps) {
       };
 
       try {
-        const response = await fetch("/api/posts", {
-          method: "POST",
+        const url =
+          mode === "edit" && initialData?.id
+            ? `https://fe-hiring-rest-api.vercel.app/posts/${initialData.id}`
+            : "https://fe-hiring-rest-api.vercel.app/posts";
+
+        const method = mode === "edit" ? "PATCH" : "POST";
+
+        const response = await fetch(url, {
+          method,
           headers: {
+            Authorization: `Bearer ${session?.accessToken}`,
             "Content-Type": "application/json",
+            Accept: "application/json",
           },
           body: JSON.stringify(postData),
         });
@@ -122,24 +145,32 @@ export function NewPostForm({ onSubmit }: NewPostFormProps) {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-          
+
         const result = await response.json();
         onSubmit(result);
-        // Reset form
-        setTitle("");
-        setBody("");
-        setCategory("");
-        setTags([]);
-        setTagInput("");
-        setErrors({});
+
+        // Reset form only in create mode
+        if (mode === "create") {
+          setTitle("");
+          setBody("");
+          setCategory("");
+          setTags([]);
+          setTagInput("");
+          setErrors({});
+        }
       } catch (error) {
-        console.error("Error creating post:", error);
+        console.error(
+          `Error ${mode === "edit" ? "updating" : "creating"} post:`,
+          error
+        );
         setErrors({
           ...errors,
           submit:
             error instanceof Error
               ? error.message
-              : "Failed to create post. Please try again.",
+              : `Failed to ${
+                  mode === "edit" ? "update" : "create"
+                } post. Please try again.`,
         });
       }
     }
@@ -152,12 +183,6 @@ export function NewPostForm({ onSubmit }: NewPostFormProps) {
         <Label>Email</Label>
         <Input disabled placeholder={session?.user?.email ?? ""} />
       </div>
-
-      <div className="space-y-2">
-        <Label>User Id</Label>
-        <Input disabled placeholder={session?.user?.id ?? ""} />
-      </div>
-
       {/* Title */}
       <div className="space-y-2">
         <Label htmlFor="title">
@@ -287,7 +312,7 @@ export function NewPostForm({ onSubmit }: NewPostFormProps) {
       )}
       {/* Submit Button */}
       <Button type="submit" className="w-full" disabled={status === "loading"}>
-        Create Post
+        {mode === "edit" ? "Update Post" : "Create Post"}
       </Button>
     </form>
   );

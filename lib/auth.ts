@@ -26,25 +26,14 @@ export const authOptions: AuthOptions = {
                     });
 
                     const data = await res.json();
-
                     // 전체 응답 구조 출력 (디버깅용)
                     console.log("📦 Full backend response:", JSON.stringify(data, null, 2));
-
                     if (res.ok && data) {
-                        // NextAuth expects a flat User object with token at top level
-                        // Transform backend response to match NextAuth's expected format
-                        if (data.user && data.token) {
-                            // Backend returns { token: "...", user: { id, email, name } }
-                            return {
-                                ...data.user,
-                                token: data.token, // Add token to the user object
-                            };
-                        } else if (data.token) {
-                            // Backend returns { token: "...", id, email, name }
-                            return data;
-                        } else {
-                            console.error("❌ Backend response missing token:", data);
-                            return null;
+                        return {
+                            id: data.userId, // User ID from the API
+                            name: data.userName || credentials.email,
+                            email: credentials.email,
+                            accessToken: data.token, // 👈 Store the Swagger Token here!
                         }
                     }
                     return null;
@@ -63,7 +52,6 @@ export const authOptions: AuthOptions = {
     callbacks: {
         async jwt({ token, user, trigger }: { token: JWT; user?: User; trigger?: string }) {
             console.log("🔧 JWT callback triggered:", { trigger, hasUser: !!user });
-
             if (user) {
                 console.log("👤 User object received:", {
                     id: user.id,
@@ -73,29 +61,18 @@ export const authOptions: AuthOptions = {
 
                 token.email = user.email;
                 token.id = user.id;
-                token.token = (user as any).token;
+                token.accessToken = (user as any).accessToken;
 
-                console.log("✅ Token updated with user data");
+                console.log("✅ Token updated with user data", {
+                    tokenSet: !!token.token
+                });
             }
 
             return token;
         },
         async session({ session, token }: { session: Session; token: JWT }) {
-            console.log("🔧 Session callback triggered");
-
-            if (session.user) {
-                session.user.id = token.id as string;
-                session.user.email = token.email as string;
-            }
-
-            if (token.token) {
-                session.token = token.token as string;
-                session.user.token = token.token as string;
-                console.log("✅ Session token set:", session.token ? "YES" : "NO");
-            } else {
-                console.warn("⚠️ No token found in JWT token object");
-            }
-
+            session.accessToken = token.accessToken as string;
+            console.log("✅ Session token set:", !!session.accessToken);
             return session;
         },
     },
