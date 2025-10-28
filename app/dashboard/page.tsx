@@ -2,7 +2,7 @@ import CoffeeCharts from "@/components/coffee-chart";
 import MoodTrendCharts from "@/components/mood-trend-chart";
 import CoffeeConsumptionCharts from "@/components/coffee-consumption-chart";
 
-export const DashboardPage = () => {
+export default function DashboardPage() {
   return (
     <main className="min-h-screen bg-background p-4 md:p-8 w-full">
       <div className="mx-auto max-w-7xl">
@@ -19,6 +19,4 @@ export const DashboardPage = () => {
       </div>
     </main>
   );
-};
-
-export default DashboardPage;
+}
