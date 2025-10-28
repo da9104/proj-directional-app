@@ -24,7 +24,8 @@ export async function GET(request: NextRequest) {
     console.log("🔍 GET /api/posts - JWT token:", {
         hasToken: !!jwtToken,
         tokenType: typeof jwtToken,
-        tokenKeys: jwtToken ? Object.keys(jwtToken) : []
+        tokenKeys: jwtToken ? Object.keys(jwtToken) : [],
+        fullToken: jwtToken // Log the full token to debug
     });
 
     if (!jwtToken) {
@@ -38,12 +39,21 @@ export async function GET(request: NextRequest) {
     console.log("🔍 Token extracted:", {
         hasToken: !!token,
         tokenLength: token?.length,
-        tokenPreview: token ? `${token.substring(0, 20)}...` : 'none'
+        tokenPreview: token ? `${token.substring(0, 20)}...` : 'none',
+        jwtTokenValue: jwtToken.token // Debug the exact value
     });
 
     if (!token) {
-        console.error("❌ GET /api/posts - JWT exists but no token property found");
-        return NextResponse.json({ error: "Unauthorized - Missing token" }, { status: 401 });
+        console.error("❌ GET /api/posts - JWT exists but no token property found", {
+            availableKeys: Object.keys(jwtToken),
+            jwtToken: JSON.stringify(jwtToken)
+        });
+        return NextResponse.json({
+            error: "Unauthorized - Missing token",
+            debug: process.env.NODE_ENV === 'development' ? {
+                availableKeys: Object.keys(jwtToken)
+            } : undefined
+        }, { status: 401 });
     }
 
     // Check if token is expired

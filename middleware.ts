@@ -28,7 +28,7 @@ export async function middleware(request: NextRequest) {
 // Configure which routes to protect
 export const config = {
     matcher: [
-        '/dashboard/:path*',
+        // '/dashboard/:path*',
         // '/api/posts/:path*', // Disabled - backend API not working
         // Add other protected routes here
         // '/profile/:path*',
