@@ -1,36 +1,139 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Directional App
 
-## Getting Started
+Next.js 기반의 대시보드 및 포스트 관리 애플리케이션입니다.
 
-First, run the development server:
+## 주요 기능
+
+- 🔐 NextAuth를 이용한 인증 시스템
+- 📊 대시보드 (커피 소비량, 무드 트렌드 차트)
+- 📝 포스트 관리 (생성, 조회, 검색, 정렬)
+- 🎨 Tailwind CSS 및 Radix UI 기반의 모던한 UI
+- 🔒 미들웨어를 통한 라우트 보호
+
+## 기술 스택
+
+- **프레임워크**: Next.js 16.0.0 (App Router)
+- **언어**: TypeScript
+- **인증**: NextAuth.js
+- **스타일링**: Tailwind CSS 4
+- **UI 컴포넌트**: Radix UI
+- **차트**: Chart.js, Recharts
+- **상태 관리**: SWR, TanStack Query
+
+## 시작하기
+
+### 환경 변수 설정
+
+`.env` 파일을 생성하고 다음 내용을 추가하세요:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+NEXTAUTH_SECRET=your-secret-key-here
+NODE_ENV=development
+NEXT_PUBLIC_FRONTEND_URL=http://localhost:3000
+NEXT_PUBLIC_BACKEND_URL=http://fe-hiring-rest-api.vercel.app
+NEXTAUTH_URL=http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 설치 및 실행
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# 의존성 설치
+npm install
+# 개발 서버 실행
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+브라우저에서 [http://localhost:3000](http://localhost:3000)을 열어 확인하세요.
 
-## Learn More
+### 빌드
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+# 프로덕션 빌드
+npm run build
+# 프로덕션 서버 실행
+npm start
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 프로젝트 구조
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+├── app/                    # Next.js App Router
+│   ├── api/               # API 라우트
+│   │   ├── auth/         # NextAuth 인증
+│   │   ├── posts/        # 포스트 API
+│   │   └── mock/         # Mock 데이터 API
+│   ├── dashboard/        # 대시보드 페이지
+│   ├── signin/           # 로그인 페이지
+│   └── page.tsx          # 홈 페이지
+├── components/            # React 컴포넌트
+│   ├── ui/               # UI 컴포넌트 (Radix UI)
+│   ├── posts-table.tsx   # 포스트 테이블
+│   ├── new-post-form.tsx # 포스트 작성 폼
+│   └── ...
+├── lib/                   # 유틸리티 함수
+│   └── jwt-utils.ts      # JWT 관련 유틸
+├── types/                 # TypeScript 타입 정의
+└── middleware.ts          # Next.js 미들웨어
+```
 
-## Deploy on Vercel
+## 주요 페이지
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `/` - 홈 페이지
+- `/signin` - 로그인 페이지
+- `/dashboard` - 대시보드 (인증 필요)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## API 엔드포인트
+
+### 인증
+- `POST /api/auth/[...nextauth]` - NextAuth 인증 핸들러
+- `GET /api/auth/clear-session` - 세션 초기화
+
+### 포스트
+- `GET /api/posts` - 포스트 목록 조회
+- `POST /api/posts` - 포스트 생성
+위 API에는 401 버그가 있어서 사용할 수 없었습니다.
+
+- `GET /api/mock/posts` - Mock 포스트 데이터
+
+### 대시보드 데이터
+- `GET /api/mock/coffee-consumption` - 커피 소비량 데이터
+- `GET /api/mock/weekly-mood-trend` - 주간 무드 트렌드
+- `GET /api/mock/top-coffee-brands` - 인기 커피 브랜드
+
+## 인증
+
+이 프로젝트는 NextAuth.js를 사용하여 JWT 기반 인증을 구현합니다.
+
+### 로그인
+
+1. `/signin` 페이지에서 이메일과 비밀번호 입력
+2. 백엔드 API로 인증 요청
+3. 성공 시 JWT 토큰을 세션에 저장
+4. 보호된 라우트 접근 가능
+
+### 미들웨어
+
+`middleware.ts`는 다음 라우트를 보호합니다:
+- `/dashboard/*` - 대시보드 페이지
+
+인증되지 않은 사용자는 자동으로 `/signin`으로 리다이렉트됩니다.
+
+## 개발 참고사항
+
+### 로그인 후 401 에러
+
+1. missing bearer token - 401 에러는 계속 발생하였고 Next.js 16 버전의 JWT 토큰이 유효한 것인데도 불구하고 인증되지지가 않았습니다.
+
+### Mock API 사용
+
+Mock API를 사용하여 데이터를 시각화 하였습니다:
+- `/api/mock/posts` - 포스트 데이터
+- `/api/mock/coffee-consumption` - 커피 소비량
+- `/api/mock/weekly-mood-trend` - 무드 트렌드
+
+### 환경 변수
+
+- `NEXTAUTH_SECRET`: JWT 암호화에 사용되는 시크릿 키
+- `NEXT_PUBLIC_BACKEND_URL`: 백엔드 API URL
+- `NEXTAUTH_URL`: 애플리케이션 URL
+
